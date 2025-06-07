@@ -187,7 +187,10 @@ void testMasterSlaveNegotiation(TestFramework& test) {
     TurboMIDI::TurboMIDI master(&masterPlatform, TurboMIDI::DeviceRole::MASTER);
     TurboMIDI::TurboMIDI slave(&slavePlatform, TurboMIDI::DeviceRole::SLAVE);
     
-    // Configure slave speeds
+    // Configure master and slave speeds
+    master.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_2X, true);
+    master.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_4X, true);
+    
     slave.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_2X, true);
     slave.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_4X, true);
     
@@ -243,6 +246,9 @@ void testTimeouts(TestFramework& test) {
     MockPlatform platform;
     TurboMIDI::TurboMIDI turbo(&platform, TurboMIDI::DeviceRole::SLAVE);
     
+    // Configure device to support 4x speed
+    turbo.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_4X, true);
+    
     // Set speed changed callback
     bool speedChangedCalled = false;
     TurboMIDI::SpeedMultiplier lastSpeed = TurboMIDI::SpeedMultiplier::SPEED_1X;
@@ -282,6 +288,9 @@ void testSpeedPush(TestFramework& test) {
     
     MockPlatform platform;
     TurboMIDI::TurboMIDI master(&platform, TurboMIDI::DeviceRole::MASTER);
+    
+    // Configure master to support 8x speed
+    master.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_8X, true);
     
     // Push speed to 8x
     platform.clearBuffers();

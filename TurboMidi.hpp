@@ -4,7 +4,7 @@
  * @version 1.0
  * 
  * This library provides a friendly API for implementing the Elektron TurboMIDI
- * protocol (platform-independent).
+ * protocol on various platforms (desktop, Arduino, embedded systems, etc.)
  */
 
 #ifndef TURBOMIDI_HPP
@@ -202,10 +202,8 @@ public:
           lastActiveSenseTime_(0), lastMessageTime_(0), testState_(TestState::IDLE),
           pendingTestSpeed_(SpeedMultiplier::SPEED_1X), 
           pendingTargetSpeed_(SpeedMultiplier::SPEED_1X) {
-        // Initialize with support for all speeds (uncertified by default)
-        for (int i = 1; i <= 11; ++i) {
-            localConfig_.addSpeed(static_cast<SpeedMultiplier>(i), false);
-        }
+        // Initialize with only 1x speed supported by default
+        localConfig_.addSpeed(SpeedMultiplier::SPEED_1X, true);
     }
     
     // Configure supported speeds
@@ -317,11 +315,46 @@ private:
     
     void setSpeed(SpeedMultiplier speed) {
         currentSpeed_ = speed;
-        uint32_t baudRate = 31250 * static_cast<uint32_t>(speed);
+        uint32_t baudRate = getBaudRate(speed);
         platform_->setBaudRate(baudRate);
         
         if (onSpeedChanged) {
             onSpeedChanged(speed);
+        }
+    }
+    
+    uint32_t getActualMultiplier(SpeedMultiplier speed) {
+        switch (speed) {
+            case SpeedMultiplier::SPEED_1X:    return 1;
+            case SpeedMultiplier::SPEED_2X:    return 2;
+            case SpeedMultiplier::SPEED_3_3X:  return 3;  // Actually 3.33, but using 3 for integer math
+            case SpeedMultiplier::SPEED_4X:    return 4;
+            case SpeedMultiplier::SPEED_5X:    return 5;
+            case SpeedMultiplier::SPEED_6_6X:  return 7;  // Actually 6.66, rounding to 7
+            case SpeedMultiplier::SPEED_8X:    return 8;
+            case SpeedMultiplier::SPEED_10X:   return 10;
+            case SpeedMultiplier::SPEED_13_3X: return 13; // Actually 13.33, using 13
+            case SpeedMultiplier::SPEED_16X:   return 16;
+            case SpeedMultiplier::SPEED_20X:   return 20;
+            default: return 1;
+        }
+    }
+    
+    uint32_t getBaudRate(SpeedMultiplier speed) {
+        // Calculate exact baud rates for each speed
+        switch (speed) {
+            case SpeedMultiplier::SPEED_1X:    return 31250;
+            case SpeedMultiplier::SPEED_2X:    return 62500;
+            case SpeedMultiplier::SPEED_3_3X:  return 103125;   // 31250 * 3.3
+            case SpeedMultiplier::SPEED_4X:    return 125000;
+            case SpeedMultiplier::SPEED_5X:    return 156250;
+            case SpeedMultiplier::SPEED_6_6X:  return 206250;   // 31250 * 6.6
+            case SpeedMultiplier::SPEED_8X:    return 250000;
+            case SpeedMultiplier::SPEED_10X:   return 312500;
+            case SpeedMultiplier::SPEED_13_3X: return 415625;   // 31250 * 13.3
+            case SpeedMultiplier::SPEED_16X:   return 500000;
+            case SpeedMultiplier::SPEED_20X:   return 625000;
+            default: return 31250;
         }
     }
     
