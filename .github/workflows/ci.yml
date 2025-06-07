@@ -30,14 +30,6 @@ jobs:
         lcov --capture --directory . --output-file coverage.info
         lcov --remove coverage.info '/usr/*' --output-file coverage.info
         lcov --list coverage.info
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
 
   test-multiple-platforms:
     strategy:

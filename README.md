@@ -1,8 +1,6 @@
 # TurboMIDI
 
 [![CI](https://github.com/DatanoiseTV/TurboMidi/actions/workflows/ci.yml/badge.svg)](https://github.com/DatanoiseTV/TurboMidi/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/DatanoiseTV/TurboMidi/branch/main/graph/badge.svg)](https://codecov.io/gh/DatanoiseTV/TurboMidi)
-[![License](https://img.shields.io/github/license/DatanoiseTV/TurboMidi)](https://github.com/DatanoiseTV/TurboMidi/blob/main/LICENSE)
 
 A header-only, platform-independent C++ library for implementing the Elektron TurboMIDI protocol. This library enables MIDI communication at speeds up to 20x the standard MIDI rate (31.25 kbit/s).
 
