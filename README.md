@@ -36,11 +36,30 @@ TurboMIDI is a proprietary protocol developed by Elektron that allows compatible
 
 ## Installation
 
+### As a Header-Only Library
+
 Simply copy `TurboMidi.hpp` to your project and include it:
 
 ```cpp
 #include "TurboMidi.hpp"
 ```
+
+### Arduino Library
+
+1. Download the library as a ZIP file
+2. In Arduino IDE: Sketch → Include Library → Add .ZIP Library
+3. Select the downloaded ZIP file
+4. Include in your sketch:
+
+```cpp
+#include <TurboMidiArduino.hpp>
+```
+
+Or install manually:
+1. Copy the entire folder to your Arduino libraries directory
+   - Windows: `Documents\Arduino\libraries\`
+   - macOS: `~/Documents/Arduino/libraries/`
+   - Linux: `~/Arduino/libraries/`
 
 ## Usage
 
@@ -98,65 +117,55 @@ while (running) {
 
 ### Arduino Example
 
+Using the Arduino-specific wrapper (recommended):
+
 ```cpp
-#include "TurboMidi.hpp"
+#include <TurboMidiArduino.hpp>
 
-class ArduinoPlatform : public TurboMIDI::IPlatform {
-private:
-    HardwareSerial* serial;
-    
-public:
-    ArduinoPlatform(HardwareSerial* ser) : serial(ser) {
-        serial->begin(31250);  // Standard MIDI baud rate
-    }
-    
-    void sendMidiData(const uint8_t* data, size_t length) override {
-        serial->write(data, length);
-    }
-    
-    size_t receiveMidiData(uint8_t* buffer, size_t maxLength) override {
-        size_t bytesRead = 0;
-        while (serial->available() && bytesRead < maxLength) {
-            buffer[bytesRead++] = serial->read();
-        }
-        return bytesRead;
-    }
-    
-    uint32_t getMillis() override {
-        return millis();
-    }
-    
-    void setBaudRate(uint32_t baudRate) override {
-        serial->end();
-        serial->begin(baudRate);
-    }
-    
-    void delayMs(uint32_t ms) override {
-        delay(ms);
-    }
-};
+using namespace TurboMIDI;
 
-ArduinoPlatform platform(&Serial1);
-TurboMIDI::TurboMIDI turbo(&platform, TurboMIDI::DeviceRole::SLAVE);
+// Create TurboMIDI instance using Serial1 as slave device
+TurboMIDIArduino turboMidi(Serial1, DeviceRole::SLAVE);
 
 void setup() {
-    // Configure as slave with 2x and 4x certified speeds
-    turbo.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_2X, true);
-    turbo.setSupportedSpeed(TurboMIDI::SpeedMultiplier::SPEED_4X, true);
+    // Initialize serial for debugging
+    Serial.begin(115200);
+    
+    // Initialize TurboMIDI
+    turboMidi.begin();
+    
+    // Configure supported speeds
+    turboMidi.setSupportedSpeed(SpeedMultiplier::SPEED_2X, true);   // certified
+    turboMidi.setSupportedSpeed(SpeedMultiplier::SPEED_4X, true);   // certified
+    turboMidi.setSupportedSpeed(SpeedMultiplier::SPEED_8X, false);  // uncertified
     
     // Set callbacks
-    turbo.onSpeedChanged = [](TurboMIDI::SpeedMultiplier speed) {
+    turboMidi.onSpeedChanged([](SpeedMultiplier speed) {
         Serial.print("Speed changed to: ");
         Serial.print(static_cast<int>(speed));
         Serial.println("x");
-    };
+    });
+    
+    turboMidi.onSpeedRequest([]() {
+        Serial.println("Speed request received");
+    });
 }
 
 void loop() {
-    turbo.handleIncomingData();
-    turbo.sendActiveSense();
+    // Process TurboMIDI protocol
+    turboMidi.update();
+    
+    // Your MIDI processing here
+    if (turboMidi.available()) {
+        // Process incoming MIDI data
+    }
 }
 ```
+
+For more examples, see:
+- `examples/TurboMIDI_Basic/` - Basic bidirectional usage
+- `examples/TurboMIDI_Master/` - Master device with speed negotiation
+- `examples/TurboMIDI_Slave/` - Slave device with DIP switch configuration
 
 ## Platform Implementation
 
@@ -170,11 +179,23 @@ To use TurboMIDI on your platform, implement the `IPlatform` interface:
 | `setBaudRate()` | Change UART/serial baud rate for speed changes |
 | `delayMs()` | Platform-specific delay function |
 
-See the examples directory for implementations for:
-- Desktop (Windows/macOS/Linux) using RtMidi
-- Arduino (AVR/ARM)
-- STM32 using HAL
-- Generic embedded template
+### Arduino Implementation
+
+The library includes `TurboMidiArduino.hpp` which provides:
+- `ArduinoPlatform`: Hardware UART implementation of `IPlatform`
+- `TurboMIDIArduino`: Ready-to-use wrapper combining platform and protocol
+- Automatic baud rate switching for all Arduino boards
+- Built-in active sensing management
+
+### Hardware Requirements
+
+For Arduino usage, you'll need:
+- Arduino board with at least one hardware UART
+- MIDI input circuit (optocoupler, resistors)
+- MIDI output circuit (buffer, resistors)
+- For speeds above 8x: Arduino Due, Teensy, or ESP32 recommended
+
+Note: Standard Arduino Uno/Nano can reliably handle up to 4x-8x speed depending on your code complexity.
 
 ## Protocol Details
 
